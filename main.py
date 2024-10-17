@@ -19,6 +19,36 @@ class Country:
         self.mask = mask
         self.rect = rect
         self.army = []
+        self.factories = 1
+        self.factoryJobs = {"Building": 1}
+        self.buildProgress = []
+        self.buildTime = 100
+
+    def script(self):
+        if sum(list(self.factoryJobs.values())) > self.factories:
+            for job in self.factryJobs:
+                if self.factoryJobs[job] > 0:
+                    self.factoryJobs[job] -= 1
+                    break
+        for i in range(self.factoryJobs["Building"]):
+            try:
+                self.buildProgress[i] += 0.01
+            except:
+                self.buildProgress.append(0)
+            if self.buildProgress[i] > self.buildTime:
+                self.factories += 1
+                self.buildProgress.pop(i)
+
+    def select(self):
+        print("Total Factories")
+        print(self.factories)
+        print("Empolyment Status")
+        print(self.factoryJobs)
+        print("Build Status")
+        print(self.buildProgress)
+        print()
+
+
 
 def getColors(image: pg.Surface) -> set[tuple[int, int, int]]:
     colors = set()
@@ -61,7 +91,11 @@ while run:
             for country in countries:
                 point.rect.topleft = pg.mouse.get_pos()
                 if collideMask(countries[country].mask, point.mask, countries[country].rect, point.rect):
-                    print(country)
+                    print("Country", country)
+                    countries[country].select()
+
+    for country in countries:
+        countries[country].script()
 
     window.fill((255, 255, 255))
 
