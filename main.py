@@ -6,17 +6,6 @@ def load(path: str, scale: int = 1) -> pg.Surface:
 def copy(image: pg.Surface) -> pg.Surface:
     return pg.transform.scale_by(image, 1)
 
-def groupColors(colors: list[tuple[int, int, int]]) -> list[list[tuple[int, int, int]]]:
-    groupedColors = []
-    for color in colors:
-        for gColors in groupedColors:
-            if abs(color[0] - gColors[0][0]) + abs(color[1] - gColors[0][1]) + abs(color[2] - gColors[0][2]) < 10:
-                gColors.append(color)
-                break
-        else:
-            groupedColors.append([color])
-    return groupedColors
-
 width, height = 900, 500
 window = pg.display.set_mode((width, height))
 pg.display.set_caption("War Simulator")
@@ -65,12 +54,29 @@ class State:
             self.factories += 1
             self.buildProgress = 0
 
+def groupColors(colors: list[tuple[int, int, int]]) -> list[list[tuple[int, int, int]]]:
+    groupedColors = []
+    for color in colors:
+        for gColors in groupedColors:
+            if abs(color[0] - gColors[0][0]) + abs(color[1] - gColors[0][1]) + abs(color[2] - gColors[0][2]) < 10:
+                gColors.append(color)
+                break
+        else:
+            groupedColors.append([color])
+    return groupedColors
 
-def getColors(image: pg.Surface) -> set[tuple[int, int, int]]:
+def getColors(image: pg.Surface, blacklist: list[tuple[int, int, int]] = []) -> set[tuple[int, int, int]]:
+    for i, color in enumerate(blacklist):
+        if len(color) != 4:
+            blacklist[i] = (color[0], color[1], color[2], 255)
     colors = set()
     for i in range(image.get_width()):
         for j in range(image.get_height()):
-            colors.add(tuple(image.get_at((i, j))))
+            color = tuple(image.get_at((i, j)))
+            if color in blacklist:
+                continue
+            colors.add(color)
+
     return colors
 
 def createMasks(image: pg.Surface, colors: list[list[tuple[int, int, int]]], names: list[str]) -> dict[str, Country]:
@@ -95,8 +101,8 @@ def collideMask(mask1, mask2, rect1, rect2) -> bool:
     return False
 
 world_map = load("fantasy.png", 4)
-groupedColors = groupColors(getColors(world_map))
-countryNames = ["India", "Russia", "Ameriaca", "Russia", "Germany", "Australia", "Argentina", "Brazil", "Denmark", "Italy", "Afghanistan", "South Africa"]
+groupedColors = groupColors(getColors(world_map, [(0, 0, 0), (0, 162, 232)]))
+countryNames = ["India", "Russia", "America", "Germany", "Australia", "Argentina", "Brazil", "Denmark", "Italy", "Afghanistan", "South Africa"]
 countries = createMasks(world_map, groupedColors, countryNames)
 temp = pg.Surface((1, 1))
 temp.fill((255, 255, 255))
@@ -114,6 +120,7 @@ while run:
                 for state in countries[country].states:
                     if collideMask(state.mask, point.mask, state.rect, point.rect):
                         print("Country", country)
+                        print("State Factories", state.factories)
 
     for country in countries:
         countries[country].script()
