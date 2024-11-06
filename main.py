@@ -5,10 +5,11 @@ from game import *
 
 
 def createGrid(image, names, blacklist=None, scale=1):
-    """Returns grid of country's provinces ,the color: name mappings, the name: color mappings and the grid size"""
+    """Returns grid of country's provinces , list of nation's, the color: name mappings, the name: color mappings and the grid size"""
     grid = {}
     nameMap = {}
     nameCount = 0
+    nations = {name: Country(name) for name in names}
     if blacklist is None: blacklist = []
 
     for x in range(image.get_width()):
@@ -23,9 +24,21 @@ def createGrid(image, names, blacklist=None, scale=1):
                 nameMap[color] = names[nameCount]
                 nameCount += 1
             grid[x, y] = State(nameMap[color], pg.Rect(x*scale, y*scale, scale, scale), color)
+            nations[names[nameCount]].states[x, y] = grid[x, y]
 
-    return grid, nameMap, {v: k for k, v in nameMap.items()}, image.get_size()
+    return grid, nations, nameMap, {v: k for k, v in nameMap.items()}, image.get_size()
 
+
+class Country:
+    def __init__(self, name):
+        self.name = name
+        self.states = {}
+        self.army = []
+
+class Unit:
+    def __init__(self):
+        self.attack = 1
+        self.health = 100
 
 class State:
     def __init__(self, country: str, rect: pg.Rect, color: tuple[int, int, int]):
@@ -34,6 +47,7 @@ class State:
         self.color = color
         self.image = pg.Surface(self.rect.size)
         self.image.fill(color)
+        self.unit = None
 
     def display(self, window: pg.Surface, x_offset: int, y_offset: int):
         window.blit(self.image, (self.rect.x - x_offset, self.rect.y - y_offset))
@@ -46,7 +60,7 @@ class Simulator(Game):
         self.mapName = mapName
         self.mapImage = assets[mapName]
         self.countryNames = ["Harfang", "Narnia", "Achenland", "Calorman", "Argon", "Sicily", "Eteinsmoor"]
-        self.grid, self.nameMap, self.colorMap, self.gridSize = createGrid(self.mapImage, self.countryNames,
+        self.grid, self.nations, self.nameMap, self.colorMap, self.gridSize = createGrid(self.mapImage, self.countryNames,
                                                                            [(255, 255, 255)], 10)
         self.x_offset, self.y_offset = 0, 0
 
