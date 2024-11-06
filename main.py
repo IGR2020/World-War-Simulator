@@ -1,3 +1,5 @@
+from pygame.examples.cursors import image
+
 from functions import blit_text
 from game import *
 
@@ -20,15 +22,22 @@ def createGrid(image, names, blacklist=None, scale=1):
             except KeyError:
                 nameMap[color] = names[nameCount]
                 nameCount += 1
-            grid[x, y] = {"Country": nameMap[color], "Rect": pg.Rect(x * scale, y * scale, scale, scale)}
+            grid[x, y] = State(nameMap[color], pg.Rect(x*scale, y*scale, scale, scale), color)
 
     return grid, nameMap, {v: k for k, v in nameMap.items()}, image.get_size()
 
 
 class State:
-    def __init__(self, country: str, rect: pg.Rect):
+    def __init__(self, country: str, rect: pg.Rect, color: tuple[int, int, int]):
         self.country = country
         self.rect = rect
+        self.color = color
+        self.image = pg.Surface(self.rect.size)
+        self.image.fill(color)
+
+    def display(self, window: pg.Surface, x_offset: int, y_offset: int):
+        window.blit(self.image, (self.rect.x - x_offset, self.rect.y - y_offset))
+
 
 class Simulator(Game):
     def __init__(self, resolution: tuple[int, int], name: str, mapName="Map1", fps: int = 60,
@@ -39,12 +48,13 @@ class Simulator(Game):
         self.countryNames = ["Harfang", "Narnia", "Achenland", "Calorman", "Argon", "Sicily", "Eteinsmoor"]
         self.grid, self.nameMap, self.colorMap, self.gridSize = createGrid(self.mapImage, self.countryNames,
                                                                            [(255, 255, 255)], 10)
+        self.x_offset, self.y_offset = 0, 0
 
     def display(self) -> None:
         for x in range(self.gridSize[0]):
             for y in range(self.gridSize[1]):
                 try:
-                    pg.draw.rect(self.window, self.colorMap[self.grid[x, y]["Country"]], self.grid[x, y]["Rect"])
+                    self.grid[x, y].display(self.window, self.x_offset, self.y_offset)
                 except KeyError:
                     continue
         blit_text(self.window, round(self.clock.get_fps()), (0, 0), colour=(0, 0, 0), size=30)
