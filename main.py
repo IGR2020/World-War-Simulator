@@ -1,5 +1,8 @@
 from pygame.examples.cursors import image
+from pygame.transform import scale
 
+from GUI import TextBox
+from assets import division_scale, division_border_size
 from functions import blit_text
 from game import *
 
@@ -33,12 +36,15 @@ class Country:
     def __init__(self, name):
         self.name = name
         self.states = {}
-        self.army = []
 
 class Unit:
-    def __init__(self):
+    def __init__(self, variety):
         self.attack = 1
         self.health = 100
+        self.type = variety
+
+    def display(self, window: pg.Surface, x_offset: int, y_offset: int, x:int, y:int):
+        window.blit(assets[self.type], (x-x_offset, y-y_offset))
 
 class State:
     def __init__(self, country: str, rect: pg.Rect, color: tuple[int, int, int]):
@@ -51,6 +57,8 @@ class State:
 
     def display(self, window: pg.Surface, x_offset: int, y_offset: int):
         window.blit(self.image, (self.rect.x - x_offset, self.rect.y - y_offset))
+        if self.unit is not None:
+            self.unit.display(window, x_offset, y_offset, self.rect.x, self.rect.y)
 
 
 class Simulator(Game):
@@ -61,8 +69,10 @@ class Simulator(Game):
         self.mapImage = assets[mapName]
         self.countryNames = ["Harfang", "Narnia", "Achenland", "Calorman", "Argon", "Sicily", "Eteinsmoor"]
         self.grid, self.nations, self.nameMap, self.colorMap, self.gridSize = createGrid(self.mapImage, self.countryNames,
-                                                                           [(255, 255, 255)], 10)
+                                                                           [(255, 255, 255)], 64)
         self.x_offset, self.y_offset = 0, 0
+        self.nations["Narnia"].states[0, 14].unit = Unit("Infantry")
+        self.playerNation = "Narnia"
 
     def display(self) -> None:
         for x in range(self.gridSize[0]):
@@ -72,6 +82,14 @@ class Simulator(Game):
                 except KeyError:
                     continue
         blit_text(self.window, round(self.clock.get_fps()), (0, 0), colour=(0, 0, 0), size=30)
+
+    def tick(self) -> None:
+        super().tick()
+        relX, relY = pg.mouse.get_rel()
+        mouseDown = pg.mouse.get_pressed()
+        if True in mouseDown:
+            self.x_offset -= relX
+            self.y_offset -= relY
 
 
 instance = Simulator((900, 500), "World War Simulator", fps=60)
