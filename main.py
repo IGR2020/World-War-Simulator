@@ -27,7 +27,7 @@ def createGrid(image, names, blacklist=None, scale=1):
                 nameMap[color] = names[nameCount]
                 nameCount += 1
             grid[x, y] = State(nameMap[color], pg.Rect(x*scale, y*scale, scale, scale), color)
-            nations[names[nameCount]].states[x, y] = grid[x, y]
+            nations[nameMap[color]].states[x, y] = grid[x, y]
 
     return grid, nations, nameMap, {v: k for k, v in nameMap.items()}, image.get_size()
 
@@ -68,11 +68,14 @@ class Simulator(Game):
         self.mapName = mapName
         self.mapImage = assets[mapName]
         self.countryNames = ["Harfang", "Narnia", "Achenland", "Calorman", "Argon", "Sicily", "Eteinsmoor"]
+        self.stateSize = 64
         self.grid, self.nations, self.nameMap, self.colorMap, self.gridSize = createGrid(self.mapImage, self.countryNames,
-                                                                           [(255, 255, 255)], 64)
+                                                                                         [(255, 255, 255)], self.stateSize)
         self.x_offset, self.y_offset = 0, 0
-        self.nations["Narnia"].states[0, 14].unit = Unit("Infantry")
+        self.nations["Harfang"].states[0, 14].unit = Unit("Infantry")
         self.playerNation = "Narnia"
+        self.selectedState: State | None = None
+        self.selectedStatePos : tuple[int, int] | None = None
 
     def display(self) -> None:
         for x in range(self.gridSize[0]):
@@ -82,6 +85,31 @@ class Simulator(Game):
                 except KeyError:
                     continue
         blit_text(self.window, round(self.clock.get_fps()), (0, 0), colour=(0, 0, 0), size=30)
+
+    def event(self, event: pg.event.Event) -> None:
+        super().event(event)
+        if event.type == pg.MOUSEBUTTONDOWN:
+            mouseX, mouseY = pg.mouse.get_pos()
+            try:
+                newStatePos = (mouseX + self.x_offset) // self.stateSize, (mouseY + self.y_offset) // self.stateSize
+                newState = self.grid[newStatePos]
+                if self.selectedState is not None and self.selectedState.unit is not None and self.selectedState.country == newState.country and self.selectedState.rect.topleft != newState.rect.topleft:
+                    newState.unit = self.selectedState.unit
+                    self.selectedState.unit = None
+                    self.selectedState = None
+                elif self.selectedState is not None and self.selectedState.unit is not None and self.selectedState.rect.topleft != newState.rect.topleft:
+                    newState.unit = self.selectedState.unit
+                    self.selectedState.unit = None
+                    self.nations[newState.country].states.pop(newStatePos)
+                    self.nations[self.selectedState.country].states[newStatePos] = newState
+                    newState.image.fill(self.colorMap[self.selectedState.country])
+                    newState.country = self.selectedState.country
+                    self.selectedState = None
+                else:
+                    self.selectedState = newState
+                    self.selectedStatePos = newStatePos
+            except KeyError:
+                pass
 
     def tick(self) -> None:
         super().tick()
