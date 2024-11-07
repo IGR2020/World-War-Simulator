@@ -1,5 +1,4 @@
-from pygame.examples.cursors import image
-from pygame.transform import scale
+import time
 
 from GUI import TextBox
 from assets import division_scale, division_border_size
@@ -26,7 +25,7 @@ def createGrid(image, names, blacklist=None, scale=1):
             except KeyError:
                 nameMap[color] = names[nameCount]
                 nameCount += 1
-            grid[x, y] = State(nameMap[color], pg.Rect(x*scale, y*scale, scale, scale), color)
+            grid[x, y] = State(nameMap[color], pg.Rect(x * scale, y * scale, scale, scale), color)
             nations[nameMap[color]].states[x, y] = grid[x, y]
 
     return grid, nations, nameMap, {v: k for k, v in nameMap.items()}, image.get_size()
@@ -37,14 +36,19 @@ class Country:
         self.name = name
         self.states = {}
 
+
 class Unit:
     def __init__(self, variety):
         self.attack = 1
         self.health = 100
         self.type = variety
+        self.target = None
+        self.moveSpeed = 1
+        self.moveCoolDown = time.time()
 
-    def display(self, window: pg.Surface, x_offset: int, y_offset: int, x:int, y:int):
-        window.blit(assets[self.type], (x-x_offset, y-y_offset))
+    def display(self, window: pg.Surface, x_offset: int, y_offset: int, x: int, y: int):
+        window.blit(assets[self.type], (x - x_offset, y - y_offset))
+
 
 class State:
     def __init__(self, country: str, rect: pg.Rect, color: tuple[int, int, int]):
@@ -69,13 +73,15 @@ class Simulator(Game):
         self.mapImage = assets[mapName]
         self.countryNames = ["Harfang", "Narnia", "Achenland", "Calorman", "Argon", "Sicily", "Eteinsmoor"]
         self.stateSize = 64
-        self.grid, self.nations, self.nameMap, self.colorMap, self.gridSize = createGrid(self.mapImage, self.countryNames,
-                                                                                         [(255, 255, 255)], self.stateSize)
+        self.grid, self.nations, self.nameMap, self.colorMap, self.gridSize = createGrid(self.mapImage,
+                                                                                         self.countryNames,
+                                                                                         [(255, 255, 255)],
+                                                                                         self.stateSize)
         self.x_offset, self.y_offset = 0, 0
         self.nations["Harfang"].states[0, 14].unit = Unit("Infantry")
-        self.playerNation = "Narnia"
+        self.playerNation = "Harfang"
         self.selectedState: State | None = None
-        self.selectedStatePos : tuple[int, int] | None = None
+        self.selectedStatePos: tuple[int, int] | None = None
 
     def display(self) -> None:
         for x in range(self.gridSize[0]):
@@ -89,27 +95,32 @@ class Simulator(Game):
     def event(self, event: pg.event.Event) -> None:
         super().event(event)
         if event.type == pg.MOUSEBUTTONDOWN:
-            mouseX, mouseY = pg.mouse.get_pos()
             try:
-                newStatePos = (mouseX + self.x_offset) // self.stateSize, (mouseY + self.y_offset) // self.stateSize
-                newState = self.grid[newStatePos]
-                if self.selectedState is not None and self.selectedState.unit is not None and self.selectedState.country == newState.country and self.selectedState.rect.topleft != newState.rect.topleft:
-                    newState.unit = self.selectedState.unit
-                    self.selectedState.unit = None
-                    self.selectedState = None
-                elif self.selectedState is not None and self.selectedState.unit is not None and self.selectedState.rect.topleft != newState.rect.topleft:
-                    newState.unit = self.selectedState.unit
-                    self.selectedState.unit = None
-                    self.nations[newState.country].states.pop(newStatePos)
-                    self.nations[self.selectedState.country].states[newStatePos] = newState
-                    newState.image.fill(self.colorMap[self.selectedState.country])
-                    newState.country = self.selectedState.country
-                    self.selectedState = None
+                mouseX, mouseY = pg.mouse.get_pos()
+                newStatePos = ((mouseX + self.x_offset) // self.stateSize, (mouseY + self.y_offset) // self.stateSize)
+                if self.selectedState is not None and self.selectedState.unit is not None:
+                    self.selectedState.unit.target = newStatePos
                 else:
-                    self.selectedState = newState
-                    self.selectedStatePos = newStatePos
+                    self.selectedState = self.grid[newStatePos]
             except KeyError:
                 pass
+
+    def moveUnit(self, selectedState: State, selectedStatePos: tuple[int, int], newStatePos: tuple[int, int]):
+        newStatePos = (newStatePos[0], newStatePos[1])
+        newState = self.grid[newStatePos]
+        # movement withing same country
+        if selectedState is not None and (newStatePos[0] - selectedStatePos[0]) + abs(
+                newStatePos[1] - selectedStatePos[1]) > 1:
+            pass
+        elif selectedState is not None and selectedState.unit is not None and selectedState.country == newState.country and selectedState.rect.topleft != newState.rect.topleft:
+            newState.unit, selectedState.unit = selectedState.unit, newState.unit
+        # movement to different country
+        elif selectedState is not None and selectedState.unit is not None and selectedState.rect.topleft != newState.rect.topleft:
+            newState.unit, selectedState.unit = selectedState.unit, newState.unit
+            self.nations[newState.country].states.pop(newStatePos)
+            self.nations[selectedState.country].states[newStatePos] = newState
+            newState.image.fill(self.colorMap[selectedState.country])
+            newState.country = selectedState.country
 
     def tick(self) -> None:
         super().tick()
@@ -118,6 +129,36 @@ class Simulator(Game):
         if True in mouseDown:
             self.x_offset -= relX
             self.y_offset -= relY
+        for x in range(self.gridSize[0]):
+            for y in range(self.gridSize[1]):
+                try:
+                    if self.grid[x, y].unit is None:
+                        continue
+                    target = self.grid[x, y].unit.target
+                    moveCoolDown = self.grid[x, y].unit.moveCoolDown
+                    moveSpeed = self.grid[x, y].unit.moveSpeed
+                    newStatePos = [0, 0]
+                    if target is None:
+                        continue
+                    if time.time() - moveCoolDown < moveSpeed:
+                        continue
+                    if target == (x, y):
+                        self.grid[x, y].unit.target = None
+                        continue
+                    if x - target[0] < 0:
+                        newStatePos[0] = + 1
+                    elif x - target[0] > 0:
+                        newStatePos[0] = -1
+                    elif y - target[1] < 0:
+                        newStatePos[1] = +1
+                    elif y - target[1] > 0:
+                        newStatePos[1] = -1
+                    newStatePos[0] += x
+                    newStatePos[1] += y
+                    self.grid[x, y].unit.moveCoolDown = time.time()
+                    self.moveUnit(self.grid[x, y], (x, y), newStatePos)
+                except KeyError:
+                    continue
 
 
 instance = Simulator((900, 500), "World War Simulator", fps=60)
