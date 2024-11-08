@@ -114,19 +114,23 @@ class Simulator(Game):
         newState = self.grid[newStatePos]
         selectedState = self.grid[selectedStatePos]
         # invalidates movement which is not adjacent
-        if selectedState is not None and (newStatePos[0] - selectedStatePos[0]) + abs(
+        if selectedState is  None or (newStatePos[0] - selectedStatePos[0]) + abs(
                 newStatePos[1] - selectedStatePos[1]) > 1:
             pass
         # movement withing same country
-        elif selectedState is not None and selectedState.unit is not None and selectedState.country == newState.country and selectedState.rect.topleft != newState.rect.topleft:
+        elif selectedState.unit is not None and selectedState.country == newState.country and selectedState.rect.topleft != newState.rect.topleft:
             self.grid[selectedStatePos].unit.moveCoolDown = time.time()
             newState.unit, selectedState.unit = selectedState.unit, newState.unit
         # movement to different country
-        elif selectedState is not None and selectedState.unit is not None and selectedState.rect.topleft != newState.rect.topleft:
+        elif selectedState.unit is not None and selectedState.rect.topleft != newState.rect.topleft:
             self.grid[selectedStatePos].unit.moveCoolDown = time.time()
-            if newState.unit is not None and newState.unit.health > 1:
+            if selectedState.unit.health < 1:
+                selectedState.unit = None
+                if newState is not None and newState.unit.health < 1:
+                    newState.unit = None
+            elif newState.unit is not None and newState.unit.health > 1:
                 newState.unit.health -= selectedState.unit.attack
-                print("Attacking")
+                selectedState.unit.health -= newState.unit.attack
             else:
                 newState.unit = None
                 newState.unit = selectedState.unit
