@@ -113,6 +113,7 @@ class Simulator(Game):
                 newStatePos = ((mouseX + self.x_offset) // stateSize, (mouseY + self.y_offset) // stateSize)
                 if self.selectedState is not None and self.selectedState.unit is not None and self.selectedState.country == self.playerNation:
                     self.selectedState.unit.target = newStatePos
+                    self.selectedState = None
                 else:
                     self.selectedState = self.grid[newStatePos]
             except KeyError:
