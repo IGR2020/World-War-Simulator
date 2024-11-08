@@ -1,7 +1,7 @@
 import time
 
 from GUI import TextBox
-from assets import division_scale, division_border_size
+from assets import division_scale, division_border_size, stateSize
 from functions import blit_text
 from game import *
 
@@ -39,15 +39,18 @@ class Country:
 
 class Unit:
     def __init__(self, variety):
-        self.attack = 1
+        self.attack = 10
         self.health = 100
+        self.maxHealth = 100
         self.type = variety
         self.target = None
-        self.moveSpeed = 1
+        self.moveSpeed = 0.2
         self.moveCoolDown = time.time()
 
     def display(self, window: pg.Surface, x_offset: int, y_offset: int, x: int, y: int):
         window.blit(assets[self.type], (x - x_offset, y - y_offset))
+        rect = pg.Rect(x-x_offset, y+stateSize-y_offset-5, (self.health/self.maxHealth)*stateSize, 5)
+        pg.draw.rect(window, (255, 0, 0), rect)
 
 
 class State:
@@ -71,14 +74,14 @@ class Simulator(Game):
         super().__init__(resolution, name, fps, background)
         self.mapName = mapName
         self.mapImage = assets[mapName]
-        self.countryNames = ["Harfang", "Narnia", "Achenland", "Calorman", "Argon", "Sicily", "Eteinsmoor"]
-        self.stateSize = 64
+        self.countryNames = ["Harfang", "Narnia", "Archenland", "Calorman", "Argon", "Sicily", "Eteinsmoor"]
         self.grid, self.nations, self.nameMap, self.colorMap, self.gridSize = createGrid(self.mapImage,
                                                                                          self.countryNames,
                                                                                          [(255, 255, 255)],
-                                                                                         self.stateSize)
+                                                                                         stateSize)
         self.x_offset, self.y_offset = 0, 0
         self.nations["Harfang"].states[0, 14].unit = Unit("Infantry")
+        self.nations["Argon"].states[16, 10].unit = Unit("Infantry")
         self.playerNation = "Harfang"
         self.selectedState: State | None = None
         self.selectedStatePos: tuple[int, int] | None = None
@@ -97,7 +100,7 @@ class Simulator(Game):
         if event.type == pg.MOUSEBUTTONDOWN:
             try:
                 mouseX, mouseY = pg.mouse.get_pos()
-                newStatePos = ((mouseX + self.x_offset) // self.stateSize, (mouseY + self.y_offset) // self.stateSize)
+                newStatePos = ((mouseX + self.x_offset) // stateSize, (mouseY + self.y_offset) // stateSize)
                 if self.selectedState is not None and self.selectedState.unit is not None:
                     self.selectedState.unit.target = newStatePos
                 else:
@@ -105,22 +108,33 @@ class Simulator(Game):
             except KeyError:
                 pass
 
-    def moveUnit(self, selectedState: State, selectedStatePos: tuple[int, int], newStatePos: tuple[int, int]):
-        newStatePos = (newStatePos[0], newStatePos[1])
+
+    # movement of units should be through this function only
+    def moveUnit(self, selectedStatePos: tuple[int, int], newStatePos: tuple[int, int]):
         newState = self.grid[newStatePos]
-        # movement withing same country
+        selectedState = self.grid[selectedStatePos]
+        # invalidates movement which is not adjacent
         if selectedState is not None and (newStatePos[0] - selectedStatePos[0]) + abs(
                 newStatePos[1] - selectedStatePos[1]) > 1:
             pass
+        # movement withing same country
         elif selectedState is not None and selectedState.unit is not None and selectedState.country == newState.country and selectedState.rect.topleft != newState.rect.topleft:
+            self.grid[selectedStatePos].unit.moveCoolDown = time.time()
             newState.unit, selectedState.unit = selectedState.unit, newState.unit
         # movement to different country
         elif selectedState is not None and selectedState.unit is not None and selectedState.rect.topleft != newState.rect.topleft:
-            newState.unit, selectedState.unit = selectedState.unit, newState.unit
-            self.nations[newState.country].states.pop(newStatePos)
-            self.nations[selectedState.country].states[newStatePos] = newState
-            newState.image.fill(self.colorMap[selectedState.country])
-            newState.country = selectedState.country
+            self.grid[selectedStatePos].unit.moveCoolDown = time.time()
+            if newState.unit is not None and newState.unit.health > 1:
+                newState.unit.health -= selectedState.unit.attack
+                print("Attacking")
+            else:
+                newState.unit = None
+                newState.unit = selectedState.unit
+                selectedState.unit = None
+                self.nations[newState.country].states.pop(newStatePos)
+                self.nations[selectedState.country].states[newStatePos] = newState
+                newState.image.fill(self.colorMap[selectedState.country])
+                newState.country = selectedState.country
 
     def tick(self) -> None:
         super().tick()
@@ -155,8 +169,8 @@ class Simulator(Game):
                         newStatePos[1] = -1
                     newStatePos[0] += x
                     newStatePos[1] += y
-                    self.grid[x, y].unit.moveCoolDown = time.time()
-                    self.moveUnit(self.grid[x, y], (x, y), newStatePos)
+                    newStatePos = (newStatePos[0], newStatePos[1])
+                    self.moveUnit( (x, y), newStatePos)
                 except KeyError:
                     continue
 
