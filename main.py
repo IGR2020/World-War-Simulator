@@ -47,17 +47,18 @@ class Unit:
         self.moveSpeed = unitData[variety]["Move Speed"]
         self.moveCoolDown = time.time()
         self.experience = 1
+        self.healRate = unitData[variety]["Heal Rate"]
 
     def addExperience(self, experience):
         self.experience += experience
         self.moveSpeed = unitData[self.type]["Move Speed"] * self.experience
         self.attack = unitData[self.type]["Attack"] * self.experience
-        self.health = unitData[self.type]["Health"] * self.experience - self.health * self.experience
         self.maxHealth = unitData[self.type]["Health"] * self.experience
+        self.healRate = unitData[self.type]["Heal Rate"] * self.experience
 
     def display(self, window: pg.Surface, x_offset: int, y_offset: int, x: int, y: int):
         window.blit(assets[self.type], (x - x_offset, y - y_offset))
-        rect = pg.Rect(x-x_offset, y+stateSize-y_offset-5, (self.health/self.maxHealth)*stateSize, 5)
+        rect = pg.Rect(x - x_offset, y + stateSize - y_offset - 5, (self.health / self.maxHealth) * stateSize, 5)
         pg.draw.rect(window, (255, 0, 0), rect)
 
 
@@ -87,8 +88,9 @@ class Simulator(Game):
                                                                                          self.countryNames,
                                                                                          [(255, 255, 255)],
                                                                                          stateSize)
-        self.x_offset, self.y_offset = 0, 0
-        self.nations["Harfang"].states[0, 14].unit = Unit("Infantry")
+        self.x_offset, self.y_offset = 0, 500
+        self.nations["Harfang"].states[12, 14].unit = Unit("Infantry")
+        self.nations["Harfang"].states[13, 14].unit = Unit("Infantry")
         self.nations["Argon"].states[16, 10].unit = Unit("Infantry")
         self.playerNation = "Harfang"
         self.selectedState: State | None = None
@@ -116,7 +118,6 @@ class Simulator(Game):
             except KeyError:
                 pass
 
-
     # movement of units should be through this function only
     def moveUnit(self, selectedStatePos: tuple[int, int], newStatePos: tuple[int, int]):
         newState = self.grid[newStatePos]
@@ -138,9 +139,10 @@ class Simulator(Game):
                     newState.unit = None
             elif newState.unit is not None and newState.unit.health > 1:
                 newState.unit.health -= selectedState.unit.attack
+                newState.unit.moveCoolDown = time.time()
                 selectedState.unit.health -= newState.unit.attack
                 selectedState.unit.addExperience(0.1)
-                newState.unit.addExperience(0.08)
+                newState.unit.addExperience(0.03)
             else:
                 newState.unit = None
                 newState.unit = selectedState.unit
@@ -166,9 +168,11 @@ class Simulator(Game):
                     moveCoolDown = self.grid[x, y].unit.moveCoolDown
                     moveSpeed = self.grid[x, y].unit.moveSpeed
                     newStatePos = [0, 0]
-                    if target is None:
-                        continue
                     if time.time() - moveCoolDown < moveSpeed:
+                        continue
+                    self.grid[x, y].unit.health += self.grid[x, y].unit.healRate
+                    self.grid[x, y].unit.health = min(self.grid[x, y].unit.health, self.grid[x, y].unit.maxHealth)
+                    if target is None:
                         continue
                     if target == (x, y):
                         self.grid[x, y].unit.target = None
@@ -184,7 +188,7 @@ class Simulator(Game):
                     newStatePos[0] += x
                     newStatePos[1] += y
                     newStatePos = (newStatePos[0], newStatePos[1])
-                    self.moveUnit( (x, y), newStatePos)
+                    self.moveUnit((x, y), newStatePos)
                 except KeyError:
                     continue
 
