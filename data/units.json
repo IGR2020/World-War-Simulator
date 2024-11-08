@@ -1,0 +1,7 @@
+{
+  "Infantry": {
+    "Attack": 4.5,
+    "Health": 100,
+    "Move Speed": 2.5
+  }
+}

@@ -1,7 +1,7 @@
 import time
 
 from GUI import TextBox
-from assets import division_scale, division_border_size, stateSize
+from assets import division_scale, division_border_size, stateSize, unitData
 from functions import blit_text
 from game import *
 
@@ -39,13 +39,21 @@ class Country:
 
 class Unit:
     def __init__(self, variety):
-        self.attack = 10
-        self.health = 100
-        self.maxHealth = 100
+        self.attack = unitData[variety]["Attack"]
+        self.health = unitData[variety]["Health"]
+        self.maxHealth = unitData[variety]["Health"]
         self.type = variety
         self.target = None
-        self.moveSpeed = 0.2
+        self.moveSpeed = unitData[variety]["Move Speed"]
         self.moveCoolDown = time.time()
+        self.experience = 1
+
+    def addExperience(self, experience):
+        self.experience += experience
+        self.moveSpeed = unitData[self.type]["Move Speed"] * self.experience
+        self.attack = unitData[self.type]["Attack"] * self.experience
+        self.health = unitData[self.type]["Health"] * self.experience - self.health * self.experience
+        self.maxHealth = unitData[self.type]["Health"] * self.experience
 
     def display(self, window: pg.Surface, x_offset: int, y_offset: int, x: int, y: int):
         window.blit(assets[self.type], (x - x_offset, y - y_offset))
@@ -70,7 +78,7 @@ class State:
 
 class Simulator(Game):
     def __init__(self, resolution: tuple[int, int], name: str, mapName="Map1", fps: int = 60,
-                 background: tuple[int, int, int] = (255, 255, 255), ):
+                 background: tuple[int, int, int] = (255, 255, 255)):
         super().__init__(resolution, name, fps, background)
         self.mapName = mapName
         self.mapImage = assets[mapName]
@@ -101,7 +109,7 @@ class Simulator(Game):
             try:
                 mouseX, mouseY = pg.mouse.get_pos()
                 newStatePos = ((mouseX + self.x_offset) // stateSize, (mouseY + self.y_offset) // stateSize)
-                if self.selectedState is not None and self.selectedState.unit is not None:
+                if self.selectedState is not None and self.selectedState.unit is not None and self.selectedState.country == self.playerNation:
                     self.selectedState.unit.target = newStatePos
                 else:
                     self.selectedState = self.grid[newStatePos]
@@ -114,7 +122,7 @@ class Simulator(Game):
         newState = self.grid[newStatePos]
         selectedState = self.grid[selectedStatePos]
         # invalidates movement which is not adjacent
-        if selectedState is  None or (newStatePos[0] - selectedStatePos[0]) + abs(
+        if selectedState is None or (newStatePos[0] - selectedStatePos[0]) + abs(
                 newStatePos[1] - selectedStatePos[1]) > 1:
             pass
         # movement withing same country
@@ -131,6 +139,8 @@ class Simulator(Game):
             elif newState.unit is not None and newState.unit.health > 1:
                 newState.unit.health -= selectedState.unit.attack
                 selectedState.unit.health -= newState.unit.attack
+                selectedState.unit.addExperience(0.1)
+                newState.unit.addExperience(0.08)
             else:
                 newState.unit = None
                 newState.unit = selectedState.unit
