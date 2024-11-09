@@ -1,7 +1,8 @@
 import time
 
 from GUI import TextBox
-from assets import division_scale, division_border_size, stateSize, unitData, buildEffectSpacing, buildEffectThickness
+from assets import division_scale, division_border_size, stateSize, unitData, buildEffectSpacing, buildEffectThickness, \
+    productionValue, buildCost, buildTime
 from functions import blit_text
 from game import *
 
@@ -34,8 +35,9 @@ def createGrid(image, names, blacklist=None, scale=1):
 class Country:
     def __init__(self, name):
         self.name = name
-        self.states = {}
+        self.states: dict[tuple[int, int], State] = {}
         self.buildQue = []
+        self.money = 0
 
     def display(self, window: pg.Surface, x_offset: int, y_offset: int):
         for state in self.states:
@@ -44,12 +46,30 @@ class Country:
             startX, startY = buildPos[0] * stateSize, buildPos[1] * stateSize
             for x, y in zip(range(buildPos[0] * stateSize, buildPos[0] * stateSize + stateSize, buildEffectSpacing),
                             range(buildPos[1] * stateSize, buildPos[1] * stateSize + stateSize, buildEffectSpacing)):
-                pg.draw.line(window, (0, 0, 0), (startX-x_offset, y-y_offset), (x-x_offset, startY-y_offset), width=buildEffectThickness)
+                pg.draw.line(window, (0, 0, 0), (startX - x_offset, y - y_offset), (x - x_offset, startY - y_offset),
+                             width=buildEffectThickness)
         for buildPos in self.buildQue:
             startX, startY = buildPos[0] * stateSize + stateSize, buildPos[1] * stateSize + stateSize
             for x, y in zip(range(buildPos[0] * stateSize, buildPos[0] * stateSize + stateSize, buildEffectSpacing),
                             range(buildPos[1] * stateSize, buildPos[1] * stateSize + stateSize, buildEffectSpacing)):
-                pg.draw.line(window, (0, 0, 0), (x-x_offset, startY-y_offset), (startX-x_offset, y-y_offset), width=buildEffectThickness)
+                pg.draw.line(window, (0, 0, 0), (x - x_offset, startY - y_offset), (startX - x_offset, y - y_offset),
+                             width=buildEffectThickness)
+
+    def script(self):
+        for state in self.states:
+            self.money += self.states[state].production * productionValue
+
+        for buildPos in self.buildQue:
+            for _ in range(15):
+                if self.money > buildCost:
+                    self.money -= buildCost
+                    self.states[buildPos].buildProgress += 1
+                elif self.states[buildPos].buildProgress > buildTime:
+                    self.states[buildPos].production += 1
+                    self.buildQue.remove(buildPos)
+                    break
+                else:
+                    break
 
 
 class Unit:
@@ -87,7 +107,7 @@ class State:
         self.image = pg.Surface(self.rect.size)
         self.image.fill(color)
         self.unit = None
-        self.production = 1
+        self.production = 3
         self.buildProgress = 0
 
     def display(self, window: pg.Surface, x_offset: int, y_offset: int):
@@ -211,6 +231,8 @@ class Simulator(Game):
                     self.moveUnit((x, y), newStatePos)
                 except KeyError:
                     continue
+        for nation in self.nations:
+            self.nations[nation].script()
 
 
 instance = Simulator((900, 500), "World War Simulator", fps=60)
