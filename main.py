@@ -90,7 +90,7 @@ class Simulator(Game):
                                                                                          stateSize)
         self.x_offset, self.y_offset = 0, 500
         self.nations["Harfang"].states[12, 14].unit = Unit("Infantry")
-        self.nations["Harfang"].states[13, 14].unit = Unit("Infantry")
+        self.nations["Harfang"].states[13, 14].unit = Unit("Tank")
         self.nations["Argon"].states[16, 10].unit = Unit("Infantry")
         self.playerNation = "Harfang"
         self.selectedState: State | None = None

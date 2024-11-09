@@ -2,7 +2,13 @@
   "Infantry": {
     "Attack": 4.5,
     "Health": 100,
-    "Move Speed": 0.5,
+    "Move Speed": 2.5,
     "Heal Rate": 0.5
+  },
+  "Tank": {
+    "Attack": 27,
+    "Health": 625,
+    "Move Speed": 0.7,
+    "Heal Rate": 0.05
   }
 }
