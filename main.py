@@ -1,10 +1,9 @@
 import time
 
 from GUI import TextBox
-from assets import division_scale, division_border_size, stateSize, unitData, buildEffectSpacing, buildEffectThickness, \
-    productionValue, buildCost, buildTime
 from functions import blit_text
 from game import *
+from assets import *
 
 
 def createGrid(image, names, blacklist=None, scale=1):
@@ -142,6 +141,9 @@ class Simulator(Game):
 
     def event(self, event: pg.event.Event) -> None:
         super().event(event)
+        if event.type == pg.KEYDOWN:
+            if event.key == pg.K_F3:
+                print("\n", self.nations[self.playerNation].money, sep="\n")
         if event.type == pg.MOUSEBUTTONDOWN:
             mouseX, mouseY = pg.mouse.get_pos()
             try:
@@ -235,5 +237,5 @@ class Simulator(Game):
             self.nations[nation].script()
 
 
-instance = Simulator((900, 500), "World War Simulator", fps=60)
+instance = Simulator((900, 500), "World War Simulator", fps=fps)
 instance.start()
