@@ -1,7 +1,7 @@
 import time
 
 from GUI import TextBox
-from assets import division_scale, division_border_size, stateSize, unitData
+from assets import division_scale, division_border_size, stateSize, unitData, buildEffectSpacing, buildEffectThickness
 from functions import blit_text
 from game import *
 
@@ -35,6 +35,21 @@ class Country:
     def __init__(self, name):
         self.name = name
         self.states = {}
+        self.buildQue = []
+
+    def display(self, window: pg.Surface, x_offset: int, y_offset: int):
+        for state in self.states:
+            self.states[state].display(window, x_offset, y_offset)
+        for buildPos in self.buildQue:
+            startX, startY = buildPos[0] * stateSize, buildPos[1] * stateSize
+            for x, y in zip(range(buildPos[0] * stateSize, buildPos[0] * stateSize + stateSize, buildEffectSpacing),
+                            range(buildPos[1] * stateSize, buildPos[1] * stateSize + stateSize, buildEffectSpacing)):
+                pg.draw.line(window, (0, 0, 0), (startX-x_offset, y-y_offset), (x-x_offset, startY-y_offset), width=buildEffectThickness)
+        for buildPos in self.buildQue:
+            startX, startY = buildPos[0] * stateSize + stateSize, buildPos[1] * stateSize + stateSize
+            for x, y in zip(range(buildPos[0] * stateSize, buildPos[0] * stateSize + stateSize, buildEffectSpacing),
+                            range(buildPos[1] * stateSize, buildPos[1] * stateSize + stateSize, buildEffectSpacing)):
+                pg.draw.line(window, (0, 0, 0), (x-x_offset, startY-y_offset), (startX-x_offset, y-y_offset), width=buildEffectThickness)
 
 
 class Unit:
@@ -72,6 +87,8 @@ class State:
         self.image = pg.Surface(self.rect.size)
         self.image.fill(color)
         self.unit = None
+        self.production = 1
+        self.buildProgress = 0
 
     def display(self, window: pg.Surface, x_offset: int, y_offset: int):
         window.blit(self.image, (self.rect.x - x_offset, self.rect.y - y_offset))
@@ -99,27 +116,27 @@ class Simulator(Game):
         self.selectedStatePos: tuple[int, int] | None = None
 
     def display(self) -> None:
-        for x in range(self.gridSize[0]):
-            for y in range(self.gridSize[1]):
-                try:
-                    self.grid[x, y].display(self.window, self.x_offset, self.y_offset)
-                except KeyError:
-                    continue
+        for nation in self.nations:
+            self.nations[nation].display(self.window, self.x_offset, self.y_offset)
         blit_text(self.window, round(self.clock.get_fps()), (0, 0), colour=(0, 0, 0), size=30)
 
     def event(self, event: pg.event.Event) -> None:
         super().event(event)
         if event.type == pg.MOUSEBUTTONDOWN:
+            mouseX, mouseY = pg.mouse.get_pos()
             try:
-                mouseX, mouseY = pg.mouse.get_pos()
                 newStatePos = ((mouseX + self.x_offset) // stateSize, (mouseY + self.y_offset) // stateSize)
+                self.grid[newStatePos]
+            except KeyError:
+                return
+            if event.button == 1:
                 if self.selectedState is not None and self.selectedState.unit is not None and self.selectedState.country == self.playerNation:
                     self.selectedState.unit.target = newStatePos
                     self.selectedState = None
                 else:
                     self.selectedState = self.grid[newStatePos]
-            except KeyError:
-                pass
+            elif event.button == 3 and self.grid[newStatePos].country == self.playerNation:
+                self.nations[self.playerNation].buildQue.append(newStatePos)
 
     # movement of units should be through this function only
     def moveUnit(self, selectedStatePos: tuple[int, int], newStatePos: tuple[int, int]):

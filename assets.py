@@ -9,3 +9,6 @@ division_border_size = division_scale*3
 fontLocation = "assets/fonts/"
 stateSize = 64
 unitData = loadJson("data/units.json")
+buildCost = 100
+buildEffectSpacing = 8
+buildEffectThickness = 2
