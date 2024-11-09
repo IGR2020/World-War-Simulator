@@ -3,12 +3,14 @@
     "Attack": 4.5,
     "Health": 100,
     "Move Speed": 2.5,
-    "Heal Rate": 0.5
+    "Heal Rate": 0.5,
+    "Defence": 17
   },
   "Tank": {
     "Attack": 27,
-    "Health": 625,
+    "Health": 345,
     "Move Speed": 0.7,
-    "Heal Rate": 0.05
+    "Heal Rate": 0.05,
+    "Defence": 2.5
   }
 }

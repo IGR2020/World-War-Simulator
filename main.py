@@ -48,6 +48,7 @@ class Unit:
         self.moveCoolDown = time.time()
         self.experience = 1
         self.healRate = unitData[variety]["Heal Rate"]
+        self.defence = unitData[variety]["Defence"]
 
     def addExperience(self, experience):
         self.experience += experience
@@ -55,6 +56,7 @@ class Unit:
         self.attack = unitData[self.type]["Attack"] * self.experience
         self.maxHealth = unitData[self.type]["Health"] * self.experience
         self.healRate = unitData[self.type]["Heal Rate"] * self.experience
+        self.defence = unitData[self.type]["Defence"] * self.experience
 
     def display(self, window: pg.Surface, x_offset: int, y_offset: int, x: int, y: int):
         window.blit(assets[self.type], (x - x_offset, y - y_offset))
@@ -91,7 +93,7 @@ class Simulator(Game):
         self.x_offset, self.y_offset = 0, 500
         self.nations["Harfang"].states[12, 14].unit = Unit("Infantry")
         self.nations["Harfang"].states[13, 14].unit = Unit("Tank")
-        self.nations["Argon"].states[16, 10].unit = Unit("Infantry")
+        self.nations["Argon"].states[16, 10].unit = Unit("Tank")
         self.playerNation = "Harfang"
         self.selectedState: State | None = None
         self.selectedStatePos: tuple[int, int] | None = None
@@ -141,7 +143,7 @@ class Simulator(Game):
             elif newState.unit is not None and newState.unit.health > 1:
                 newState.unit.health -= selectedState.unit.attack
                 newState.unit.moveCoolDown = time.time()
-                selectedState.unit.health -= newState.unit.attack
+                selectedState.unit.health -= newState.unit.defence
                 selectedState.unit.addExperience(0.1)
                 newState.unit.addExperience(0.03)
             else:
