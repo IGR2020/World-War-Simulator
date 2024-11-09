@@ -1,12 +1,13 @@
 from collision import *
 
+
 class Game:
     def __init__(
-        self,
-        resolution: tuple[int, int],
-        name: str,
-        fps: int = 60,
-        background: tuple[int, int, int] = (255, 255, 255),
+            self,
+            resolution: tuple[int, int],
+            name: str,
+            fps: int = 60,
+            background: tuple[int, int, int] = (255, 255, 255),
     ):
         self.width, self.height = resolution
         self.name = name
@@ -24,7 +25,8 @@ class Game:
         if self.deltaTime > 1.4:
             print("[Graphics] Low FPS")
 
-    def display(self) -> None: ...
+    def display(self) -> None:
+        ...
 
     def event(self, event: pg.event.Event) -> None:
         if event.type == pg.QUIT:
@@ -44,3 +46,15 @@ class Game:
             self.display()
             pg.display.update()
         return self.quit()
+
+
+class GUIHolder:
+
+    def tick(self) -> None: ...
+
+    def display(self) -> None: ...
+
+    def event(self, event: pg.event.Event) -> None: ...
+
+    def quit(self):
+        return None
