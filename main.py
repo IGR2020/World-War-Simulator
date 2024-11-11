@@ -4,6 +4,7 @@ from GUI import TextBox
 from functions import blit_text
 from game import *
 from assets import *
+from menu import NationStats
 from nations import *
 
 
@@ -50,11 +51,15 @@ class Simulator(Game):
         self.playerNation = "Harfang"
         self.selectedState: State | None = None
         self.selectedStatePos: tuple[int, int] | None = None
+        self.playerNationStats = NationStats(0, 0, self.nations[self.playerNation])
 
     def display(self) -> None:
         for nation in self.nations:
             self.nations[nation].display(self.window, self.x_offset, self.y_offset)
-        blit_text(self.window, round(self.clock.get_fps()), (0, 0), colour=(0, 0, 0), size=30)
+        blit_text(self.window, round(self.clock.get_fps()), (0, 200), colour=(0, 0, 0), size=30)
+
+        # GUI rendering
+        self.playerNationStats.display(self.window)
 
     def event(self, event: pg.event.Event) -> None:
         super().event(event)

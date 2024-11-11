@@ -1,3 +1,4 @@
+from GUI import *
 from collision import *
 
 
@@ -49,12 +50,23 @@ class Game:
 
 
 class GUIHolder:
+    GUI = []
 
     def tick(self) -> None: ...
 
-    def display(self) -> None: ...
+    def display(self, window) -> None:
+        for GUI in self.GUI:
+            GUI.display(window)
 
     def event(self, event: pg.event.Event) -> None: ...
 
     def quit(self):
         return None
+
+# Work in Progress
+def table(GUIHeader: list[Button | TextBox | Text], spacing=0):
+    for i, header in enumerate(GUIHeader):
+        if len(GUIHeader) <= i or i < 1:
+            continue
+        header.rect.x = GUIHeader[i-1].rect.right + spacing
+    return GUIHeader

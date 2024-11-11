@@ -118,7 +118,7 @@ class Text:
     def display(self, window):
         window.blit(self.image, self.rect)
 
-class TextBox():
+class TextBox:
     def __init__(self,  imageName, selectedImageName, border: tuple[int, int] | int, x, y, color, size, font, text="", center=False) -> None:
         
         # saving reconstruction data

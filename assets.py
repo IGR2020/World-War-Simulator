@@ -15,3 +15,4 @@ buildCost = 155
 buildEffectSpacing = 8
 buildEffectThickness = 2
 productionValue = 7/fps
+GUISpacing = 30
