@@ -1,3 +1,5 @@
+from pygame.examples.cursors import image
+
 from GUI import *
 from collision import *
 
@@ -64,9 +66,12 @@ class GUIHolder:
         return None
 
 # Work in Progress
-def table(GUIHeader: list[Button | TextBox | Text], spacing=0):
+def table(GUIHeader: list[Button | TextBox | Text], spacing=0) -> list[Button | TextBox | Text]:
     for i, header in enumerate(GUIHeader):
         if len(GUIHeader) <= i or i < 1:
             continue
-        header.rect.x = GUIHeader[i-1].rect.right + spacing
+        if GUIHeader[i - 1].type == "TextBox":
+            header.rect.x = GUIHeader[i - 1].rect.right + spacing + image.get_width()
+        else:
+            header.rect.x = GUIHeader[i - 1].rect.right + spacing
     return GUIHeader

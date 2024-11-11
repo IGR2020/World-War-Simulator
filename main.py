@@ -45,9 +45,12 @@ class Simulator(Game):
                                                                                          [(255, 255, 255)],
                                                                                          stateSize)
         self.x_offset, self.y_offset = 0, 500
+
+        # Temporary Testing
         self.nations["Harfang"].states[12, 14].unit = Unit("Infantry")
         self.nations["Harfang"].states[13, 14].unit = Unit("Tank")
         self.nations["Argon"].states[16, 10].unit = Unit("Tank")
+
         self.playerNation = "Harfang"
         self.selectedState: State | None = None
         self.selectedStatePos: tuple[int, int] | None = None
@@ -118,11 +121,14 @@ class Simulator(Game):
 
     def tick(self) -> None:
         super().tick()
+
         relX, relY = pg.mouse.get_rel()
         mouseDown = pg.mouse.get_pressed()
         if True in mouseDown:
             self.x_offset -= relX
             self.y_offset -= relY
+
+        # Division Movement
         for x in range(self.gridSize[0]):
             for y in range(self.gridSize[1]):
                 try:
@@ -155,8 +161,12 @@ class Simulator(Game):
                     self.moveUnit((x, y), newStatePos)
                 except KeyError:
                     continue
+
+        # Nation scripts
         for nation in self.nations:
             self.nations[nation].script()
+
+        self.playerNationStats.tick()
 
 
 instance = Simulator((900, 500), "World War Simulator", fps=fps)

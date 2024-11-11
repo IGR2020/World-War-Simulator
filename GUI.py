@@ -107,6 +107,7 @@ class Text:
 
     
     def reload(self, reloadRect=True):
+        self.text = str(self.text)
         font_style = pg.font.Font(fontLocation + self.font + ".ttf", self.size)
         text_surface = font_style.render(self.text, True, self.color)
 

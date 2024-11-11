@@ -7,6 +7,7 @@ class Country:
         self.states: dict[tuple[int, int], State] = {}
         self.buildQue = []
         self.money = 0
+        self.estimatedProduction = 0
 
     def display(self, window: pg.Surface, x_offset: int, y_offset: int):
         for state in self.states:
@@ -25,16 +26,20 @@ class Country:
                              width=buildEffectThickness)
 
     def script(self):
+        self.estimatedProduction = 0
         for state in self.states:
+            self.estimatedProduction += self.states[state].production
             self.money += self.states[state].production * productionValue
 
         for buildPos in self.buildQue:
-            for _ in range(15):
-                if self.money > buildCost:
+            for _ in range(3):
+                if self.money > buildCost and self.states[buildPos].buildProgress < buildTime:
                     self.money -= buildCost
                     self.states[buildPos].buildProgress += 1
-                elif self.states[buildPos].buildProgress > buildTime:
-                    self.states[buildPos].production += 1
+                    print(self.states[buildPos].buildProgress)
+                elif self.states[buildPos].buildProgress >= buildTime:
+                    self.states[buildPos].production += 3
+                    self.states[buildPos].buildProgress = 0
                     self.buildQue.remove(buildPos)
                     break
                 else:
