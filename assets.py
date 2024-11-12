@@ -11,8 +11,8 @@ assets.update(load_assets("assets/icons"))
 fontLocation = "assets/fonts/"
 stateSize = 64
 unitData = loadJson("data/units.json")
-buildTime = 165
-buildCost = 115
+buildTime = 100
+buildCost = 20
 buildEffectSpacing = 8
 buildEffectThickness = 2
 productionValue = 5/fps

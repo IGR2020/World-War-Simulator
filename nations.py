@@ -1,3 +1,5 @@
+from random import randint
+
 from assets import *
 from game import *
 
@@ -8,6 +10,8 @@ class Country:
         self.buildQue = []
         self.money = 0
         self.estimatedProduction = 0
+        self.arms = {}
+        self.allocation = {"Building": 1} # Allocation to be represented in numbers between 0 and 1 (as a percentage of the total production)
 
     def display(self, window: pg.Surface, x_offset: int, y_offset: int):
         for state in self.states:
@@ -36,7 +40,6 @@ class Country:
                 if self.money > buildCost and self.states[buildPos].buildProgress < buildTime:
                     self.money -= buildCost
                     self.states[buildPos].buildProgress += 1
-                    print(self.states[buildPos].buildProgress)
                 elif self.states[buildPos].buildProgress >= buildTime:
                     self.states[buildPos].production += 3
                     self.states[buildPos].buildProgress = 0
@@ -81,7 +84,7 @@ class State:
         self.image = pg.Surface(self.rect.size)
         self.image.fill(color)
         self.unit = None
-        self.production = 3
+        self.production = max(0, randint(-5, 1))
         self.buildProgress = 0
 
     def display(self, window: pg.Surface, x_offset: int, y_offset: int):
